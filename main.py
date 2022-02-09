@@ -60,10 +60,10 @@ def create_hero(*, session: Session = Depends(get_session), hero: HeroUpdate):
 
 @hero_router.get("/heroes/", response_model=List[HeroRead])
 def read_heroes(
-        *,
-        session: Session = Depends(get_session),
-        offset: int = 0,
-        limit: int = Query(default=100, lte=100),
+    *,
+    session: Session = Depends(get_session),
+    offset: int = 0,
+    limit: int = Query(default=100, lte=100),
 ):
     heroes = session.exec(select(Hero).offset(offset).limit(limit)).all()
     return heroes
@@ -79,7 +79,7 @@ def read_hero(*, session: Session = Depends(get_session), hero_id: int):
 
 @hero_router.patch("/heroes/{hero_id}", response_model=HeroRead)
 def update_hero(
-        *, session: Session = Depends(get_session), hero_id: int, hero: HeroUpdate
+    *, session: Session = Depends(get_session), hero_id: int, hero: HeroUpdate
 ):
     db_hero = session.get(Hero, hero_id)
     if not db_hero:
@@ -114,10 +114,10 @@ def create_team(*, session: Session = Depends(get_session), team: TeamCreate):
 
 @team_router.get("/teams/", response_model=List[TeamRead])
 def read_teams(
-        *,
-        session: Session = Depends(get_session),
-        offset: int = 0,
-        limit: int = Query(default=100, lte=100),
+    *,
+    session: Session = Depends(get_session),
+    offset: int = 0,
+    limit: int = Query(default=100, lte=100),
 ):
     teams = session.exec(select(Team).offset(offset).limit(limit)).all()
     return teams
@@ -133,10 +133,10 @@ def read_team(*, team_id: int, session: Session = Depends(get_session)):
 
 @team_router.patch("/teams/{team_id}", response_model=TeamRead)
 def update_team(
-        *,
-        session: Session = Depends(get_session),
-        team_id: int,
-        team: TeamUpdate,
+    *,
+    session: Session = Depends(get_session),
+    team_id: int,
+    team: TeamUpdate,
 ):
     db_team = session.get(Team, team_id)
     if not db_team:
