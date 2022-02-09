@@ -1,0 +1,14 @@
+title = "Application Title"
+greeting_message = (
+    "Application greeting's message"
+)
+version = "1.0.0"
+host = "0.0.0.0"
+port = 8000
+log_level = "debug"
+reload = True
+url = "http://localhost:8000"
+version_api = 1
+
+url_api = "/api/v" + version_api.__str__()
+full_prefix_api = url + url_api
