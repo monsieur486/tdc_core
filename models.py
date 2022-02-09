@@ -43,7 +43,7 @@ class HeroRead(HeroBase):
 
 
 class HeroCreate(HeroBase):
-    pass
+    team_id: Optional[int] = Field(default=None, foreign_key="team.id")
 
 
 class HeroUpdate(SQLModel):
