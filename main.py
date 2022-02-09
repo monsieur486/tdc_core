@@ -1,81 +1,21 @@
-from typing import List, Optional
+import config
+import uvicorn
+from typing import List
 from fastapi import Depends, FastAPI, HTTPException, Query, APIRouter
-from sqlmodel import Field, Relationship, Session, SQLModel, create_engine, select
-
-
-class TeamBase(SQLModel):
-    name: str = Field(index=True)
-    headquarters: str
-
-
-class Team(TeamBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    heroes: List["Hero"] = Relationship(back_populates="team")
-
-
-class TeamCreate(TeamBase):
-    pass
-
-
-class TeamRead(TeamBase):
-    id: int
-
-
-class TeamUpdate(SQLModel):
-    id: Optional[int] = None
-    name: Optional[str] = None
-    headquarters: Optional[str] = None
-
-
-class HeroBase(SQLModel):
-    name: str = Field(index=True)
-    secret_name: str
-    age: Optional[int] = Field(default=None, index=True)
-
-
-class Hero(HeroBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    team_id: Optional[int] = Field(default=None, foreign_key="team.id")
-    team: Optional[Team] = Relationship(back_populates="heroes")
-
-
-class HeroRead(HeroBase):
-    id: int
-
-
-class HeroCreate(HeroBase):
-    pass
-
-
-class HeroUpdate(SQLModel):
-    name: Optional[str] = None
-    secret_name: Optional[str] = None
-    age: Optional[int] = None
-    team_id: Optional[int] = None
-
-
-class HeroReadWithTeam(HeroRead):
-    team: Optional[TeamRead] = None
-
-
-class TeamReadWithHeroes(TeamRead):
-    heroes: List[HeroRead] = []
-
-
-sqlite_file_name = "database.db"
-sqlite_url = f"sqlite:///{sqlite_file_name}"
-
-connect_args = {"check_same_thread": False}
-engine = create_engine(sqlite_url, echo=True, connect_args=connect_args)
-
-
-def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
-
-
-def get_session():
-    with Session(engine) as session:
-        yield session
+from sqlmodel import Session, select
+from database import create_db_and_tables, get_session, engine
+from models import (
+    HeroRead,
+    HeroCreate,
+    Hero,
+    HeroReadWithTeam,
+    HeroUpdate,
+    TeamRead,
+    Team,
+    TeamCreate,
+    TeamReadWithHeroes,
+    TeamUpdate,
+)
 
 
 app = FastAPI()
@@ -84,9 +24,31 @@ team_router = APIRouter(tags=["Equipes"])
 hero_router = APIRouter(tags=["Héros"])
 
 
+def import_fixtures():
+    with Session(engine) as session:
+        team01 = Team(name="Equipe Une", headquarters="Coco")
+        team02 = Team(name="Equipe Deux", headquarters="Roger")
+
+        session.add(team01)
+        session.add(team02)
+        session.commit()
+
+        hero01 = Hero(name="Emile", secret_name="007", team_id=team01.id)
+        hero02 = Hero(name="Riton", secret_name="Gérard", team_id=team01.id)
+
+        session.add(hero01)
+        session.add(hero02)
+        session.commit()
+
+
 @app.on_event("startup")
 def on_startup():
+    with Session(engine) as session:
+        session.execute("drop table if exists hero")
+        session.execute("drop table if exists team")
+
     create_db_and_tables()
+    import_fixtures()
 
 
 @hero_router.post("/heroes/", response_model=HeroRead)
@@ -203,3 +165,12 @@ def delete_team(*, session: Session = Depends(get_session), team_id: int):
 
 app.include_router(team_router)
 app.include_router(hero_router)
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "main:app",
+        host=config.host,
+        port=config.port,
+        log_level=config.log_level,
+        reload=config.reload,
+    )
