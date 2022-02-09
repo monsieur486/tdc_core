@@ -1,5 +1,4 @@
 from typing import List, Optional
-
 from fastapi import Depends, FastAPI, HTTPException, Query, APIRouter
 from sqlmodel import Field, Relationship, Session, SQLModel, create_engine, select
 
@@ -33,12 +32,10 @@ class HeroBase(SQLModel):
     secret_name: str
     age: Optional[int] = Field(default=None, index=True)
 
-    team_id: Optional[int] = Field(default=None, foreign_key="team.id")
-
 
 class Hero(HeroBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-
+    team_id: Optional[int] = Field(default=None, foreign_key="team.id")
     team: Optional[Team] = Relationship(back_populates="heroes")
 
 
