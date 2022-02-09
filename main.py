@@ -6,14 +6,13 @@ from sqlmodel import Session, select
 from database import create_db_and_tables, get_session, engine
 from models import (
     HeroRead,
-    Hero,
     HeroReadWithTeam,
     HeroUpdate,
     TeamRead,
     Team,
     TeamCreate,
     TeamReadWithHeroes,
-    TeamUpdate,
+    TeamUpdate, Hero,
 )
 
 app = FastAPI()
@@ -33,9 +32,11 @@ def import_fixtures():
 
         hero01 = Hero(name="Emile", secret_name="007", team_id=team01.id)
         hero02 = Hero(name="Riton", secret_name="Gérard", team_id=team01.id)
+        hero03 = Hero(name="Coucou", secret_name="ma Darling", team_id=team01.id)
 
         session.add(hero01)
         session.add(hero02)
+        session.add(hero03)
         session.commit()
 
 
@@ -49,7 +50,14 @@ def on_startup():
     import_fixtures()
 
 
-@hero_router.post("/heroes/", response_model=HeroUpdate)
+@app.on_event("shutdown")
+def shutdown_event():
+    with Session(engine) as session:
+        session.close()
+        print("Bye")
+
+
+@hero_router.post("/heroes/", response_model=HeroReadWithTeam)
 def create_hero(*, session: Session = Depends(get_session), hero: HeroUpdate):
     db_hero = Hero.from_orm(hero)
     session.add(db_hero)
@@ -65,7 +73,7 @@ def read_heroes(
     offset: int = 0,
     limit: int = Query(default=100, lte=100),
 ):
-    heroes = session.exec(select(Hero).offset(offset).limit(limit)).all()
+    heroes = session.exec(select(Hero).offset(offset).limit(limit).order_by(Hero.name)).all()
     return heroes
 
 
