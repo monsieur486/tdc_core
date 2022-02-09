@@ -12,7 +12,6 @@ class TeamBase(SQLModel):
 
 class Team(TeamBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-
     heroes: List["Hero"] = Relationship(back_populates="team")
 
 
