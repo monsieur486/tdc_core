@@ -42,10 +42,6 @@ class HeroRead(HeroBase):
     id: int
 
 
-class HeroCreate(HeroBase):
-    team_id: Optional[int] = Field(default=None, foreign_key="team.id")
-
-
 class HeroUpdate(SQLModel):
     name: Optional[str] = None
     secret_name: Optional[str] = None
