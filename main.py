@@ -108,7 +108,7 @@ def fixtures():
                 est_fait=True,
                 points=10,
                 chelem_realise=False,
-                petit_au_bout=None,
+                petit_au_bout=None
             ),
             Partie(
                 reunion_id=1,
@@ -118,7 +118,7 @@ def fixtures():
                 est_fait=False,
                 points=0,
                 chelem_realise=False,
-                petit_au_bout=3,
+                petit_au_bout=3
             ),
             Partie(
                 reunion_id=1,
@@ -128,7 +128,7 @@ def fixtures():
                 est_fait=True,
                 points=0,
                 chelem_realise=False,
-                petit_au_bout=2,
+                petit_au_bout=2
             ),
             Partie(
                 reunion_id=1,
@@ -138,8 +138,8 @@ def fixtures():
                 est_fait=True,
                 points=40,
                 chelem_realise=True,
-                petit_au_bout=2,
-            ),
+                petit_au_bout=2
+            )
         ]
         session.add_all(parties)
 
