@@ -7,7 +7,7 @@ from fixtures.copains_fixtures import copains
 from fixtures.liens_fixtures import liens
 from fixtures.parties_fixtures import parties
 from fixtures.reunions_fixtures import reunions
-from models import Copain, Reunion
+from models import Copain, Reunion, Default
 
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
@@ -34,6 +34,10 @@ def fixtures():
         session.add_all(liens)
         session.commit()
         session.add_all(parties)
+        session.commit()
+
+        default_value = Default(cagnotte_id=2, reunion_id=3)
+        session.add(default_value)
         session.commit()
 
 

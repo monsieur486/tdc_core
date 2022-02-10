@@ -3,6 +3,12 @@ from pydantic import condecimal
 from sqlmodel import SQLModel, Field, Relationship
 
 
+class Default(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    cagnotte_id: int = Field(default=None, foreign_key="cagnotte.id")
+    reunion_id: int = Field(default=None, foreign_key="reunion.id")
+
+
 class Cagnotte(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     nom: str = Field(index=True)
