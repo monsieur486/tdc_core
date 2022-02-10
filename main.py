@@ -1,67 +1,37 @@
-from typing import List, Optional
-
-from fastapi import FastAPI
-from sqlmodel import Field, Relationship, Session, SQLModel, create_engine, select
-
-
-app = FastAPI()
-
-
-class HeroTeamLink(SQLModel, table=True):
-    team_id: Optional[int] = Field(
-        default=None, foreign_key="team.id", primary_key=True
-    )
-    hero_id: Optional[int] = Field(
-        default=None, foreign_key="hero.id", primary_key=True
-    )
-    is_training: bool = False
-
-    team: "Team" = Relationship(back_populates="hero_links")
-    hero: "Hero" = Relationship(back_populates="team_links")
-
-
-class Team(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(index=True)
-    headquarters: str
-
-    hero_links: List[HeroTeamLink] = Relationship(back_populates="team")
-
-
-class Hero(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(index=True)
-    secret_name: str
-    age: Optional[int] = Field(default=None, index=True)
-
-    team_links: List[HeroTeamLink] = Relationship(back_populates="hero")
-
+from fastapi import FastAPI, APIRouter
+from sqlmodel import Session, SQLModel, create_engine, select
+from models import Copain, Reunion
 
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
-
-engine = create_engine(sqlite_url, echo=True)
+engine = create_engine(sqlite_url, echo=False)
+app = FastAPI()
+reunion_router = APIRouter(tags=["Reunions"])
+copain_router = APIRouter(tags=["Copains"])
 
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
 
-@app.get("/heroes/")
-def read_heroes():
+@reunion_router.get("/reunions/")
+def liste_reunions():
     with Session(engine) as session:
-        heroes = session.exec(select(Hero)).all()
-        return heroes
+        reunions = session.exec(select(Reunion)).all()
+        return reunions
 
 
-@app.get("/teams/")
-def read_team():
+@copain_router.get("/copain/")
+def liste_copains():
     with Session(engine) as session:
-        teams = session.exec(select(Team)).all()
-        return teams
+        copains = session.exec(select(Copain)).all()
+        return copains
+
+
+app.include_router(reunion_router)
+app.include_router(copain_router)
 
 
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
-
