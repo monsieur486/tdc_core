@@ -33,14 +33,8 @@ class LienCopainReunion(SQLModel, table=True):
 class Reunion(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     nom: str = Field(index=True)
-    cagnotte_id: Optional[int] = Field(default=None, foreign_key="cagnotte.id")
+    cagnotte_id: int = Field(default=None, foreign_key="cagnotte.id")
     liens_copains: List[LienCopainReunion] = Relationship(back_populates="reunions")
-
-
-class ReunionDetails(Reunion):
-    guest: bool = False
-    dette_active: bool = False
-    dette: float = 0.0
 
 
 class Copain(SQLModel, table=True):
@@ -53,9 +47,9 @@ class Copain(SQLModel, table=True):
 
 class Partie(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    reunion_id: Optional[int] = Field(default=None, foreign_key="reunion.id")
-    contrat_id: Optional[int] = Field(default=None, foreign_key="contrat.id")
-    preneur_id: Optional[int] = Field(default=None, foreign_key="copain.id")
+    reunion_id: int = Field(default=None, foreign_key="reunion.id")
+    contrat_id: int = Field(default=None, foreign_key="contrat.id")
+    preneur_id: int = Field(default=None, foreign_key="copain.id")
     appel_id: Optional[int] = Field(default=None, foreign_key="copain.id")
     est_fait: bool
     points: int

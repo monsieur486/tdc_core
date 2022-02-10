@@ -1,0 +1,44 @@
+from models import Partie
+
+parties = [
+    Partie(
+        reunion_id=1,
+        contrat_id=1,
+        preneur_id=1,
+        appel_id=2,
+        est_fait=True,
+        points=10,
+        chelem_realise=False,
+        petit_au_bout=None,
+    ),
+    Partie(
+        reunion_id=1,
+        contrat_id=2,
+        preneur_id=1,
+        appel_id=1,
+        est_fait=False,
+        points=0,
+        chelem_realise=False,
+        petit_au_bout=3,
+    ),
+    Partie(
+        reunion_id=1,
+        contrat_id=2,
+        preneur_id=3,
+        appel_id=2,
+        est_fait=True,
+        points=0,
+        chelem_realise=False,
+        petit_au_bout=2,
+    ),
+    Partie(
+        reunion_id=1,
+        contrat_id=3,
+        preneur_id=3,
+        appel_id=1,
+        est_fait=True,
+        points=40,
+        chelem_realise=True,
+        petit_au_bout=2,
+    ),
+]
