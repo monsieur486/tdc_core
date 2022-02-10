@@ -24,7 +24,7 @@ class LienCopainReunion(SQLModel, table=True):
     )
     est_guest: bool = Field(default=False)
     dette_active: bool = Field(default=False)
-    dette: condecimal(max_digits=5, decimal_places=3) = Field(default=0)
+    dette: condecimal(max_digits=6, decimal_places=2) = Field(default=0)
 
     reunions: "Reunion" = Relationship(back_populates="liens_copains")
     copains: "Copain" = Relationship(back_populates="liens_reunions")
@@ -51,3 +51,13 @@ class Copain(SQLModel, table=True):
     liens_reunions: List[LienCopainReunion] = Relationship(back_populates="copains")
 
 
+class Partie(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    reunion_id: Optional[int] = Field(default=None, foreign_key="reunion.id")
+    contrat_id: Optional[int] = Field(default=None, foreign_key="contrat.id")
+    preneur_id: Optional[int] = Field(default=None, foreign_key="copain.id")
+    appel_id: Optional[int] = Field(default=None, foreign_key="copain.id")
+    est_fait: bool
+    points: int
+    chelem_realise: bool
+    petit_au_bout: Optional[int] = Field(default=None, foreign_key="copain.id")
