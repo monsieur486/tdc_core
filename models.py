@@ -5,13 +5,16 @@ from sqlmodel import SQLModel, Field, Relationship
 
 class Default(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    cagnotte_id: int = Field(default=None, foreign_key="cagnotte.id")
-    reunion_id: int = Field(default=None, foreign_key="reunion.id")
+    reunion_id: Optional[int] = Field(default=None, foreign_key="reunion.id")
 
 
 class Cagnotte(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     nom: str = Field(index=True)
+
+
+class CagnotteCreation(SQLModel):
+    nom: str
 
 
 class Contrat(SQLModel, table=True):
@@ -46,9 +49,12 @@ class Reunion(SQLModel, table=True):
 class Copain(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     nom: str = Field(index=True)
-    est_donneur: bool = Field(default=False)
 
     liens_reunions: List[LienCopainReunion] = Relationship(back_populates="copains")
+
+
+class CopainCreation(SQLModel):
+    nom: str
 
 
 class Partie(SQLModel, table=True):
