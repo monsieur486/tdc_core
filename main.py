@@ -42,16 +42,6 @@ def fixtures():
         session.commit()
 
 
-@reunion_router.get("/reunions/{cagnotte_id}")
-def liste_reunions(cagnotte_id: int):
-    with Session(engine) as session:
-        cagnotte = session.get(Cagnotte, cagnotte_id)
-        if not cagnotte:
-            raise HTTPException(status_code=404, detail="Cagnotte introuvable")
-        reunions_db = session.exec(select(Reunion).where(Reunion.cagnotte_id == cagnotte_id).order_by(Reunion.nom.desc())).all()
-        return reunions_db
-
-
 @reunion_router.get("/active/")
 def reunion_active():
     with Session(engine) as session:
@@ -72,7 +62,7 @@ def reunion_active():
         return payload
 
 
-@reunion_router.post("/reunions/{reunion_id}/active/")
+@reunion_router.post("/active/{reunion_id}")
 def definir_reunion_active(reunion_id: int):
     with Session(engine) as session:
         default_db = session.get(Default, 1)
@@ -86,6 +76,33 @@ def definir_reunion_active(reunion_id: int):
         session.commit()
         session.refresh(default_db)
         return {"message": "Réunion activée"}
+
+
+@reunion_router.get("/reunions/{cagnotte_id}")
+def liste_reunions(cagnotte_id: int):
+    with Session(engine) as session:
+        cagnotte = session.get(Cagnotte, cagnotte_id)
+        if not cagnotte:
+            raise HTTPException(status_code=404, detail="Cagnotte introuvable")
+        reunions_db = session.exec(select(Reunion).where(Reunion.cagnotte_id == cagnotte_id).order_by(Reunion.nom.desc())).all()
+        return reunions_db
+
+
+@reunion_router.post("/reunions/{cagnotte_id}")
+def ajout_reunion(cagnotte_id: int, reunion: ReunionCreation):
+    with Session(engine) as session:
+        cagnotte = session.get(Cagnotte, cagnotte_id)
+        if not cagnotte:
+            raise HTTPException(status_code=404, detail="Cagnotte introuvable")
+        reunion_db = Reunion.from_orm(reunion)
+        reunion_db.cagnotte_id = cagnotte.id
+        session.add(reunion_db)
+        session.commit()
+        session.refresh(reunion_db)
+
+        definir_reunion_active(reunion_db.id)
+
+        return {"message": "Réunion créée"}
 
 
 @copain_router.get("/copains/")
@@ -106,7 +123,7 @@ def creation_copain(copain: CopainCreation):
 
 
 @copain_router.patch("/copaines/{copain_id}")
-def update_copain(copain_id: int, copain: CopainCreation):
+def mise_a_jour_copain(copain_id: int, copain: CopainCreation):
     with Session(engine) as session:
         db_copain = session.get(Copain, copain_id)
         if not db_copain:
@@ -117,7 +134,7 @@ def update_copain(copain_id: int, copain: CopainCreation):
         session.add(db_copain)
         session.commit()
         session.refresh(db_copain)
-        return {"message": "Copain mise à jour"}
+        return {"message": "Copain mis à jour"}
 
 
 @cagnotte_router.get("/cagnottes/")
@@ -131,7 +148,7 @@ def liste_cagnottes():
 def liste_cagnottes_archivees():
     with Session(engine) as session:
         cagnottes_db = session.exec(
-            select(Cagnotte).where(Cagnotte.est_favori == False).order_by(Cagnotte.nom.desc())).all()
+            select(Cagnotte).where(Cagnotte.est_favori == 0).order_by(Cagnotte.nom.desc())).all()
         return cagnottes_db
 
 
@@ -146,7 +163,7 @@ def creation_cagnotte(cagnotte: CagnotteCreation):
 
 
 @cagnotte_router.patch("/cagnottes/{cagnotte_id}")
-def update_cagnotte(cagnotte_id: int, cagnotte: CagnotteCreation):
+def mise_a_jour_cagnotte(cagnotte_id: int, cagnotte: CagnotteCreation):
     with Session(engine) as session:
         db_cagnotte = session.get(Cagnotte, cagnotte_id)
         if not db_cagnotte:
@@ -184,23 +201,6 @@ def active_cagnotte(cagnotte_id: int):
         return {"message": "Cagnotte activée"}
 
 
-@reunion_router.post("/reunions/{cagnotte_id}")
-def ajout_reunion(cagnotte_id: int, reunion: ReunionCreation):
-    with Session(engine) as session:
-        cagnotte = session.get(Cagnotte, cagnotte_id)
-        if not cagnotte:
-            raise HTTPException(status_code=404, detail="Cagnotte introuvable")
-        reunion_db = Reunion.from_orm(reunion)
-        reunion_db.cagnotte_id = cagnotte.id
-        session.add(reunion_db)
-        session.commit()
-        session.refresh(reunion_db)
-
-        definir_reunion_active(reunion_db.id)
-
-        return {"message": "Réunion créée"}
-
-
 @contrat_router.get("/contrats/")
 def liste_contrats():
     with Session(engine) as session:
@@ -208,8 +208,8 @@ def liste_contrats():
         return contrats_db
 
 
-app.include_router(reunion_router)
 app.include_router(cagnotte_router)
+app.include_router(reunion_router)
 app.include_router(copain_router)
 app.include_router(contrat_router)
 
