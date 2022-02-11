@@ -11,10 +11,12 @@ class Default(SQLModel, table=True):
 class Cagnotte(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     nom: str = Field(index=True)
+    est_favori: bool = Field(default=True)
 
 
 class CagnotteCreation(SQLModel):
     nom: str
+    est_favori: bool
 
 
 class Contrat(SQLModel, table=True):
@@ -44,6 +46,10 @@ class Reunion(SQLModel, table=True):
     nom: str = Field(index=True)
     cagnotte_id: int = Field(default=None, foreign_key="cagnotte.id")
     liens_copains: List[LienCopainReunion] = Relationship(back_populates="reunions")
+
+
+class ReunionCreation(SQLModel):
+    nom: str
 
 
 class Copain(SQLModel, table=True):
