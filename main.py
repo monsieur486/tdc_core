@@ -6,7 +6,17 @@ from fixtures.copains_fixtures import copains
 from fixtures.liens_fixtures import liens
 from fixtures.parties_fixtures import parties
 from fixtures.reunions_fixtures import reunions
-from models import Copain, Reunion, Default, Cagnotte, Contrat, CopainCreation, CagnotteCreation, ReunionCreation
+from models import (
+    Copain,
+    Reunion,
+    Default,
+    Cagnotte,
+    Contrat,
+    CopainCreation,
+    CagnotteCreation,
+    ReunionCreation,
+    Joueur,
+)
 
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
@@ -37,9 +47,36 @@ def fixtures():
         session.add_all(parties)
         session.commit()
 
-        default_value = Default(reunion_id=3)
+        default_value = Default(reunion_id=1)
         session.add(default_value)
         session.commit()
+
+
+def joueurs_par_reunion(reunion_id: int):
+    with Session(engine) as session:
+        joueurs = session.exec(
+            select(Joueur).where(Joueur.reunion_id == reunion_id)
+        ).all()
+        if not joueurs:
+            return []
+        joueur_db = []
+        for joueur in joueurs:
+            copain = session.get(Copain, joueur.copain_id)
+            if not copain:
+                raise HTTPException(
+                    status_code=404, detail="Copain lié au joueur introuvable."
+                )
+            payload = {
+                "copain_id": joueur.copain_id,
+                "copain_nom": copain.nom,
+                "copain_image": copain.image,
+                "est_guest": joueur.est_guest,
+                "dette": joueur.dette/100,
+                "dette_active": joueur.dette_active
+            }
+            joueur_db.append(payload)
+
+        return joueur_db
 
 
 @reunion_router.get("/active/")
@@ -50,14 +87,20 @@ def reunion_active():
             raise HTTPException(status_code=404, detail="Pas de défault définis.")
         reunion_db = session.get(Reunion, default.reunion_id)
         if not reunion_db:
-            raise HTTPException(status_code=404, detail="Pas de réunion par défault définie.")
+            raise HTTPException(
+                status_code=404, detail="Pas de réunion par défault définie."
+            )
         cagnotte = session.get(Cagnotte, reunion_db.cagnotte_id)
         if not cagnotte:
-            raise HTTPException(status_code=404, detail="Pas de cagnotte par défault définie.")
+            raise HTTPException(
+                status_code=404, detail="Pas de cagnotte par défault définie."
+            )
+        joueurs = joueurs_par_reunion(reunion_db.id)
         payload = {
             "id": reunion_db.id,
             "nom": reunion_db.nom,
-            "cagnotte": cagnotte.nom
+            "cagnotte": cagnotte.nom,
+            "joueurs": joueurs,
         }
         return payload
 
@@ -67,7 +110,9 @@ def definir_reunion_active(reunion_id: int):
     with Session(engine) as session:
         default_db = session.get(Default, 1)
         if not default_db:
-            raise HTTPException(status_code=404, detail="Pas de paramètres par défault définis.")
+            raise HTTPException(
+                status_code=404, detail="Pas de paramètres par défault définis."
+            )
         reunion = session.get(Reunion, reunion_id)
         if not reunion:
             raise HTTPException(status_code=404, detail="Réunion introuvable")
@@ -84,7 +129,11 @@ def liste_reunions(cagnotte_id: int):
         cagnotte = session.get(Cagnotte, cagnotte_id)
         if not cagnotte:
             raise HTTPException(status_code=404, detail="Cagnotte introuvable")
-        reunions_db = session.exec(select(Reunion).where(Reunion.cagnotte_id == cagnotte_id).order_by(Reunion.nom.desc())).all()
+        reunions_db = session.exec(
+            select(Reunion)
+            .where(Reunion.cagnotte_id == cagnotte_id)
+            .order_by(Reunion.nom.desc())
+        ).all()
         return reunions_db
 
 
@@ -122,7 +171,7 @@ def creation_copain(copain: CopainCreation):
         return copain_db
 
 
-@copain_router.patch("/copaines/{copain_id}")
+@copain_router.patch("/copains/{copain_id}")
 def mise_a_jour_copain(copain_id: int, copain: CopainCreation):
     with Session(engine) as session:
         db_copain = session.get(Copain, copain_id)
@@ -140,7 +189,9 @@ def mise_a_jour_copain(copain_id: int, copain: CopainCreation):
 @cagnotte_router.get("/cagnottes/")
 def liste_cagnottes():
     with Session(engine) as session:
-        cagnottes_db = session.exec(select(Cagnotte).where(Cagnotte.est_favori).order_by(Cagnotte.nom.desc())).all()
+        cagnottes_db = session.exec(
+            select(Cagnotte).where(Cagnotte.est_favori).order_by(Cagnotte.nom.desc())
+        ).all()
         return cagnottes_db
 
 
@@ -148,7 +199,10 @@ def liste_cagnottes():
 def liste_cagnottes_archivees():
     with Session(engine) as session:
         cagnottes_db = session.exec(
-            select(Cagnotte).where(Cagnotte.est_favori == 0).order_by(Cagnotte.nom.desc())).all()
+            select(Cagnotte)
+            .where(Cagnotte.est_favori == 0)
+            .order_by(Cagnotte.nom.desc())
+        ).all()
         return cagnottes_db
 
 

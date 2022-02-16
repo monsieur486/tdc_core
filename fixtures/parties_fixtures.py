@@ -120,5 +120,5 @@ parties = [
         points=40,
         chelem_realise=True,
         petit_au_bout=2,
-    )
+    ),
 ]
