@@ -60,23 +60,25 @@ def joueurs_par_reunion(reunion_id: int):
         if not joueurs:
             return []
         joueur_db = []
+        nombre_joueurs = 0
         for joueur in joueurs:
             copain = session.get(Copain, joueur.copain_id)
             if not copain:
                 raise HTTPException(
                     status_code=404, detail="Copain lié au joueur introuvable."
                 )
+            nombre_joueurs += 1
             payload = {
                 "copain_id": joueur.copain_id,
                 "copain_nom": copain.nom,
                 "copain_image": copain.image,
                 "est_guest": joueur.est_guest,
-                "dette": joueur.dette/100,
-                "dette_active": joueur.dette_active
+                "dette": joueur.dette / 100,
+                "dette_active": joueur.dette_active,
             }
             joueur_db.append(payload)
 
-        return joueur_db
+        return {"nombre_joueurs": nombre_joueurs, "joueurs": joueur_db}
 
 
 @reunion_router.get("/active/")
@@ -95,12 +97,12 @@ def reunion_active():
             raise HTTPException(
                 status_code=404, detail="Pas de cagnotte par défault définie."
             )
-        joueurs = joueurs_par_reunion(reunion_db.id)
+        informations = joueurs_par_reunion(reunion_db.id)
         payload = {
             "id": reunion_db.id,
             "nom": reunion_db.nom,
             "cagnotte": cagnotte.nom,
-            "joueurs": joueurs,
+            "informations": informations,
         }
         return payload
 
