@@ -18,7 +18,7 @@ from models import (
     CagnotteCreation,
     ReunionCreation,
     Joueur,
-    Partie,
+    Partie, PartieCreation,
 )
 
 sqlite_file_name = "database.db"
@@ -341,6 +341,17 @@ def liste_parties_par_reunion(reunion_id: int):
             select(Partie).where(Partie.reunion_id == reunion_id)
         ).all()
         return parties_db
+
+
+@partie_router.post("/parties/{reunion_id}")
+def ajout_partie(reunion_id: int, partie: PartieCreation):
+    with Session(engine) as session:
+        partie_db = Partie.from_orm(partie)
+        partie_db.reunion_id = reunion_id
+        session.add(partie_db)
+        session.commit()
+        session.refresh(partie_db)
+        return {"message": "Partie ajoutée"}
 
 
 app.include_router(copain_router)
