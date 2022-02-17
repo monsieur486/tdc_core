@@ -1,3 +1,5 @@
+from operator import itemgetter
+
 from fastapi import FastAPI, APIRouter, HTTPException
 from sqlmodel import Session, SQLModel, create_engine, select
 from fixtures.cagnottes_fixtures import cagnottes
@@ -15,7 +17,7 @@ from models import (
     CopainCreation,
     CagnotteCreation,
     ReunionCreation,
-    Joueur,
+    Joueur, Partie,
 )
 
 sqlite_file_name = "database.db"
@@ -23,6 +25,7 @@ sqlite_url = f"sqlite:///{sqlite_file_name}"
 engine = create_engine(sqlite_url, echo=False)
 app = FastAPI()
 reunion_router = APIRouter(tags=["Reunions"])
+partie_router = APIRouter(tags=["Parties"])
 cagnotte_router = APIRouter(tags=["Cagnottes"])
 copain_router = APIRouter(tags=["Copains"])
 contrat_router = APIRouter(tags=["Contrats"])
@@ -77,8 +80,9 @@ def joueurs_par_reunion(reunion_id: int):
                 "dette_active": joueur.dette_active,
             }
             joueur_db.append(payload)
+            joueurs_tries = sorted(joueur_db, key=itemgetter('copain_nom'), reverse=False)
 
-        return {"nombre_joueurs": nombre_joueurs, "joueurs": joueur_db}
+        return {"nombre_joueurs": nombre_joueurs, "joueurs": joueurs_tries}
 
 
 @reunion_router.get("/active/")
@@ -86,7 +90,7 @@ def reunion_active():
     with Session(engine) as session:
         default = session.get(Default, 1)
         if not default:
-            raise HTTPException(status_code=404, detail="Pas de défault définis.")
+            raise HTTPException(status_code=404, detail="Pas de réunion par défault définie.")
         reunion_db = session.get(Reunion, default.reunion_id)
         if not reunion_db:
             raise HTTPException(
@@ -95,13 +99,14 @@ def reunion_active():
         cagnotte = session.get(Cagnotte, reunion_db.cagnotte_id)
         if not cagnotte:
             raise HTTPException(
-                status_code=404, detail="Pas de cagnotte par défault définie."
+                status_code=404, detail="Cagnotte introuvable."
             )
         informations = joueurs_par_reunion(reunion_db.id)
         payload = {
-            "id": reunion_db.id,
-            "nom": reunion_db.nom,
-            "cagnotte": cagnotte.nom,
+            "reunion_id": reunion_db.id,
+            "reunion_nom": reunion_db.nom,
+            "cagnotte_id": cagnotte.id,
+            "cagnotte_nom": cagnotte.nom,
             "informations": informations,
         }
         return payload
@@ -264,9 +269,18 @@ def liste_contrats():
         return contrats_db
 
 
+@partie_router.get("/active/parties/")
+def liste_parties_reunion_active():
+    with Session(engine) as session:
+        reunion_active_db = reunion_active()
+        parties_db = session.exec(select(Partie).where(Partie.reunion_id == reunion_active_db.reunion_id)).all()
+        return parties_db
+
+
+app.include_router(copain_router)
 app.include_router(cagnotte_router)
 app.include_router(reunion_router)
-app.include_router(copain_router)
+app.include_router(partie_router)
 app.include_router(contrat_router)
 
 
@@ -280,4 +294,4 @@ def on_startup():
 def on_startup():
     with Session(engine) as session:
         session.close()
-        print("Bye")
+        print("Ciao ciao")

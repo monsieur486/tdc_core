@@ -40,6 +40,11 @@ class Joueur(SQLModel, table=True):
     copains: "Copain" = Relationship(back_populates="liens_reunions")
 
 
+class JoueurAjout(SQLModel):
+    copain_id: int
+    est_guest: bool
+
+
 class Reunion(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     nom: str = Field(index=True)
@@ -61,6 +66,7 @@ class Copain(SQLModel, table=True):
 
 class CopainCreation(SQLModel):
     nom: str
+    image: str
 
 
 class Partie(SQLModel, table=True):
@@ -69,7 +75,18 @@ class Partie(SQLModel, table=True):
     contrat_id: int = Field(default=None, foreign_key="contrat.id")
     preneur_id: int = Field(default=None, foreign_key="copain.id")
     appel_id: Optional[int] = Field(default=None, foreign_key="copain.id")
+    est_fait: bool = Field(default=True)
+    points: int = Field(default=0)
+    chelem_realise: bool = Field(default=False)
+    petit_au_bout: Optional[int] = Field(default=None, foreign_key="copain.id")
+
+
+class PartieCreation(SQLModel):
+    contrat_id: int
+    preneur_id: int
+    appel_id: Optional[int]
     est_fait: bool
     points: int
     chelem_realise: bool
-    petit_au_bout: Optional[int] = Field(default=None, foreign_key="copain.id")
+    petit_au_bout: Optional[int]
+
