@@ -72,14 +72,18 @@ def joueurs_par_reunion(reunion_id: int):
                     status_code=404, detail="Copain lié au joueur introuvable."
                 )
             nombre_joueurs += 1
-            dettes = session.exec(select(Joueur).where(Joueur.dette_active).where(Joueur.copain_id == joueur.copain_id))
+            dettes = session.exec(
+                select(Joueur)
+                .where(Joueur.dette_active)
+                .where(Joueur.copain_id == joueur.copain_id)
+            )
             dettes_result = []
             for dette in dettes:
                 reunion = session.get(Reunion, dette.reunion_id)
                 reunion_db = {
                     "reunion_id": reunion.id,
                     "nom": reunion.nom,
-                    "dette": dette.dette
+                    "dette": dette.dette,
                 }
                 if reunion.id != reunion_id:
                     dettes_result.append(reunion_db)
@@ -91,7 +95,7 @@ def joueurs_par_reunion(reunion_id: int):
                 "est_guest": joueur.est_guest,
                 "dette": joueur.dette,
                 "dette_active": joueur.dette_active,
-                "dettes": dettes_result
+                "dettes": dettes_result,
             }
             joueur_db.append(payload)
             joueurs_tries = sorted(
@@ -137,9 +141,11 @@ def reunion_active():
                 "est_fait": partie.est_fait,
                 "points": partie.points,
                 "chelem_realise": partie.chelem_realise,
-                "petit_au_bout": partie.petit_au_bout
+                "petit_au_bout": partie.petit_au_bout,
             }
             parties_result.append(partie_db)
+
+        contrats_db = session.exec(select(Contrat)).all()
 
         payload = {
             "reunion_id": reunion_db.id,
@@ -149,7 +155,8 @@ def reunion_active():
             "nombre_joueurs": nombre_joueurs,
             "joueurs": joueurs,
             "nombre_parties": nombre_parties,
-            "parties":  parties_result
+            "parties": parties_result,
+            "contrats": contrats_db
         }
         return payload
 
@@ -201,6 +208,22 @@ def ajout_reunion(cagnotte_id: int, reunion: ReunionCreation):
         definir_reunion_active(reunion_db.id)
 
         return {"message": "Réunion créée"}
+
+
+@reunion_router.post("/reunions/{reunion_id}/joueurs/{copain_id}")
+def paiement_dette(reunion_id: int, copain_id: int):
+    with Session(engine) as session:
+        joueur = session.exec(
+            select(Joueur)
+            .where(Joueur.reunion_id == reunion_id)
+            .where(Joueur.copain_id == copain_id)
+        ).one_or_none()
+        if not joueur:
+            raise HTTPException(status_code=404, detail="Dette introuvable")
+        joueur.dette_active = False
+        session.add(joueur)
+        session.commit()
+        return {"message": "Dette payée"}
 
 
 @copain_router.get("/copains/")
