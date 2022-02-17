@@ -18,7 +18,10 @@ from models import (
     CagnotteCreation,
     ReunionCreation,
     Joueur,
-    Partie, PartieCreation,
+    Partie,
+    PartieCreation,
+    JoueurAjout,
+    JoueurUpdate,
 )
 
 sqlite_file_name = "database.db"
@@ -105,10 +108,6 @@ def joueurs_par_reunion(reunion_id: int):
         return {"nombre_joueurs": nombre_joueurs, "joueurs": joueurs_tries}
 
 
-def calcul_points(informations, parties_db):
-    return {"inscrits": informations, "parties": parties_db}
-
-
 @reunion_router.get("/active/")
 def reunion_active():
     with Session(engine) as session:
@@ -126,8 +125,11 @@ def reunion_active():
         if not cagnotte:
             raise HTTPException(status_code=404, detail="Cagnotte introuvable.")
         informations = joueurs_par_reunion(reunion_db.id)
-        nombre_joueurs = informations["nombre_joueurs"]
-        joueurs = informations["joueurs"]
+        nombre_joueurs = 0
+        joueurs = []
+        if informations:
+            nombre_joueurs = informations["nombre_joueurs"]
+            joueurs = informations["joueurs"]
         parties_db = liste_parties_par_reunion(reunion_db.id)
         parties_result = []
         nombre_parties = 0
@@ -145,8 +147,6 @@ def reunion_active():
             }
             parties_result.append(partie_db)
 
-        contrats_db = session.exec(select(Contrat)).all()
-
         payload = {
             "reunion_id": reunion_db.id,
             "reunion_nom": reunion_db.nom,
@@ -156,7 +156,6 @@ def reunion_active():
             "joueurs": joueurs,
             "nombre_parties": nombre_parties,
             "parties": parties_result,
-            "contrats": contrats_db
         }
         return payload
 
@@ -210,20 +209,34 @@ def ajout_reunion(cagnotte_id: int, reunion: ReunionCreation):
         return {"message": "Réunion créée"}
 
 
-@reunion_router.post("/reunions/{reunion_id}/joueurs/{copain_id}")
-def paiement_dette(reunion_id: int, copain_id: int):
+@reunion_router.post("/reunions/{reunion_id}/joueurs/")
+def ajout_joueur(reunion_id: int, joueur: JoueurAjout):
     with Session(engine) as session:
-        joueur = session.exec(
+        joueur_db = Joueur.from_orm(joueur)
+        joueur_db.reunion_id = reunion_id
+        session.add(joueur_db)
+        session.commit()
+        session.refresh(joueur_db)
+        return {"message": "Joueur ajouté"}
+
+
+@reunion_router.patch("/reunions/{reunion_id}/joueurs/{copain_id}")
+def mise_a_jour_joueur(reunion_id: int, copain_id: int, joueur: JoueurUpdate):
+    with Session(engine) as session:
+        db_joueur = session.exec(
             select(Joueur)
             .where(Joueur.reunion_id == reunion_id)
             .where(Joueur.copain_id == copain_id)
         ).one_or_none()
-        if not joueur:
-            raise HTTPException(status_code=404, detail="Dette introuvable")
-        joueur.dette_active = False
-        session.add(joueur)
+        if not db_joueur:
+            raise HTTPException(status_code=404, detail="Joueur introuvable")
+        joueur_data = joueur.dict(exclude_unset=True)
+        for key, value in joueur_data.items():
+            setattr(db_joueur, key, value)
+        session.add(db_joueur)
         session.commit()
-        return {"message": "Dette payée"}
+        session.refresh(db_joueur)
+        return {"message": "Joueur mis à jour"}
 
 
 @copain_router.get("/copains/")

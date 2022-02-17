@@ -33,8 +33,8 @@ class Joueur(SQLModel, table=True):
         default=None, foreign_key="copain.id", primary_key=True
     )
     est_guest: bool = Field(default=False)
-    dette_active: bool = Field(default=False)
-    dette: int = Field(default=0)
+    dette_active: Optional[bool] = Field(default=False)
+    dette: Optional[int] = Field(default=0)
 
     reunions: "Reunion" = Relationship(back_populates="liens_copains")
     copains: "Copain" = Relationship(back_populates="liens_reunions")
@@ -43,6 +43,11 @@ class Joueur(SQLModel, table=True):
 class JoueurAjout(SQLModel):
     copain_id: int
     est_guest: bool
+
+
+class JoueurUpdate(SQLModel):
+    dette_active: bool
+    dette: int
 
 
 class Reunion(SQLModel, table=True):
