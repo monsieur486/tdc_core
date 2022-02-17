@@ -17,7 +17,8 @@ from models import (
     CopainCreation,
     CagnotteCreation,
     ReunionCreation,
-    Joueur, Partie,
+    Joueur,
+    Partie,
 )
 
 sqlite_file_name = "database.db"
@@ -80,9 +81,15 @@ def joueurs_par_reunion(reunion_id: int):
                 "dette_active": joueur.dette_active,
             }
             joueur_db.append(payload)
-            joueurs_tries = sorted(joueur_db, key=itemgetter('copain_nom'), reverse=False)
+            joueurs_tries = sorted(
+                joueur_db, key=itemgetter("copain_nom"), reverse=False
+            )
 
         return {"nombre_joueurs": nombre_joueurs, "joueurs": joueurs_tries}
+
+
+def calcul_points(informations, parties_db):
+    return {"inscrits": informations, "parties": parties_db}
 
 
 @reunion_router.get("/active/")
@@ -90,7 +97,9 @@ def reunion_active():
     with Session(engine) as session:
         default = session.get(Default, 1)
         if not default:
-            raise HTTPException(status_code=404, detail="Pas de réunion par défault définie.")
+            raise HTTPException(
+                status_code=404, detail="Pas de réunion par défault définie."
+            )
         reunion_db = session.get(Reunion, default.reunion_id)
         if not reunion_db:
             raise HTTPException(
@@ -98,16 +107,18 @@ def reunion_active():
             )
         cagnotte = session.get(Cagnotte, reunion_db.cagnotte_id)
         if not cagnotte:
-            raise HTTPException(
-                status_code=404, detail="Cagnotte introuvable."
-            )
+            raise HTTPException(status_code=404, detail="Cagnotte introuvable.")
         informations = joueurs_par_reunion(reunion_db.id)
+        parties_db = liste_parties_par_reunion(reunion_db.id)
+
+        details = calcul_points(informations, parties_db)
+
         payload = {
             "reunion_id": reunion_db.id,
             "reunion_nom": reunion_db.nom,
             "cagnotte_id": cagnotte.id,
             "cagnotte_nom": cagnotte.nom,
-            "informations": informations,
+            "details": details,
         }
         return payload
 
@@ -269,11 +280,12 @@ def liste_contrats():
         return contrats_db
 
 
-@partie_router.get("/active/parties/")
-def liste_parties_reunion_active():
+@partie_router.get("/parties/{reunion_id}")
+def liste_parties_par_reunion(reunion_id: int):
     with Session(engine) as session:
-        reunion_active_db = reunion_active()
-        parties_db = session.exec(select(Partie).where(Partie.reunion_id == reunion_active_db.reunion_id)).all()
+        parties_db = session.exec(
+            select(Partie).where(Partie.reunion_id == reunion_id)
+        ).all()
         return parties_db
 
 

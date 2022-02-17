@@ -89,4 +89,3 @@ class PartieCreation(SQLModel):
     points: int
     chelem_realise: bool
     petit_au_bout: Optional[int]
-
