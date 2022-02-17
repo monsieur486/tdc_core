@@ -51,7 +51,7 @@ def fixtures():
         session.add_all(parties)
         session.commit()
 
-        default_value = Default(reunion_id=1)
+        default_value = Default(reunion_id=3)
         session.add(default_value)
         session.commit()
 
@@ -72,13 +72,26 @@ def joueurs_par_reunion(reunion_id: int):
                     status_code=404, detail="Copain lié au joueur introuvable."
                 )
             nombre_joueurs += 1
+            dettes = session.exec(select(Joueur).where(Joueur.dette_active).where(Joueur.copain_id == joueur.copain_id))
+            dettes_result = []
+            for dette in dettes:
+                reunion = session.get(Reunion, dette.reunion_id)
+                reunion_db = {
+                    "reunion_id": reunion.id,
+                    "nom": reunion.nom,
+                    "dette": dette.dette
+                }
+                if reunion.id != reunion_id:
+                    dettes_result.append(reunion_db)
+
             payload = {
                 "copain_id": joueur.copain_id,
                 "copain_nom": copain.nom,
                 "copain_image": copain.image,
                 "est_guest": joueur.est_guest,
-                "dette": joueur.dette / 100,
+                "dette": joueur.dette,
                 "dette_active": joueur.dette_active,
+                "dettes": dettes_result
             }
             joueur_db.append(payload)
             joueurs_tries = sorted(
@@ -109,16 +122,34 @@ def reunion_active():
         if not cagnotte:
             raise HTTPException(status_code=404, detail="Cagnotte introuvable.")
         informations = joueurs_par_reunion(reunion_db.id)
+        nombre_joueurs = informations["nombre_joueurs"]
+        joueurs = informations["joueurs"]
         parties_db = liste_parties_par_reunion(reunion_db.id)
-
-        details = calcul_points(informations, parties_db)
+        parties_result = []
+        nombre_parties = 0
+        for partie in parties_db:
+            nombre_parties += 1
+            partie_db = {
+                "rang": nombre_parties,
+                "contrat_id": partie.contrat_id,
+                "preneur_id": partie.preneur_id,
+                "appel_id": partie.appel_id,
+                "est_fait": partie.est_fait,
+                "points": partie.points,
+                "chelem_realise": partie.chelem_realise,
+                "petit_au_bout": partie.petit_au_bout
+            }
+            parties_result.append(partie_db)
 
         payload = {
             "reunion_id": reunion_db.id,
             "reunion_nom": reunion_db.nom,
             "cagnotte_id": cagnotte.id,
             "cagnotte_nom": cagnotte.nom,
-            "details": details,
+            "nombre_joueurs": nombre_joueurs,
+            "joueurs": joueurs,
+            "nombre_parties": nombre_parties,
+            "parties":  parties_result
         }
         return payload
 
